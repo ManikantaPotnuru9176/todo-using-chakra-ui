@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Heading,
   Center,
@@ -14,30 +14,80 @@ import {
   Box,
 } from "@chakra-ui/react";
 import { DeleteIcon, EditIcon } from "@chakra-ui/icons";
+import { nanoid } from "nanoid";
+
+const TodoForm = ({ onSubmit, taskText, onTaskTextChange, buttonText }) => (
+  <form onSubmit={onSubmit}>
+    <HStack>
+      <Input
+        placeholder="Enter Todo"
+        focusBorderColor="teal.400"
+        w="300px"
+        value={taskText}
+        onChange={(e) => onTaskTextChange(e.target.value)}
+      />
+      <Button colorScheme="teal" size="md" onClick={onSubmit}>
+        {buttonText}
+      </Button>
+    </HStack>
+  </form>
+);
 
 const Todo = () => {
+  const [taskText, setTaskText] = useState("");
+  const [editing, setEditing] = useState(null);
+
+  const [todos, setTodos] = useState([]);
+
+  const handleAddTodo = (event) => {
+    event.preventDefault();
+    if (taskText.trim() !== "") {
+      const newTodo = { id: nanoid(), task: taskText, complete: false };
+      setTodos((prevTodos) => [newTodo, ...prevTodos]);
+      setTaskText("");
+    }
+  };
+
+  const handleDelete = (todoId) => {
+    setTodos((prevTodos) => prevTodos.filter((todo) => todo.id !== todoId));
+  };
+
+  const handleEdit = ({ id, task }) => {
+    setTaskText(task);
+    setEditing(id);
+  };
+
+  const handleUpdate = (event) => {
+    event.preventDefault();
+    if (taskText.trim() !== "") {
+      setTodos((prevTodos) =>
+        prevTodos.map((todo) =>
+          todo.id === editing ? { ...todo, task: taskText } : todo
+        )
+      );
+      setTaskText("");
+      setEditing(null);
+    }
+  };
+
   return (
     <Center h="100vh">
       <Box h="60vh">
         <VStack spacing="4" w="400px">
           <Heading>My Todo App</Heading>
           <Divider />
-          <HStack>
-            <Input
-              placeholder="Enter Todo"
-              focusBorderColor="teal.400"
-              w="300px"
-            />
-            <Button colorScheme="teal" size="md">
-              Add
-            </Button>
-          </HStack>
-          <VStack spacing="4" w="40vw" h="60vh">
-            {["mani", "jagadeesh", "abdhul", "revathi", "praveen"].map(
-              (todo) => (
-                <Card key={todo} padding="20px" w="30vw">
+          <TodoForm
+            onSubmit={editing ? handleUpdate : handleAddTodo}
+            taskText={taskText}
+            onTaskTextChange={setTaskText}
+            buttonText={editing ? "Update" : "Submit"}
+          />
+          {!editing && (
+            <VStack spacing="4" w="40vw" h="60vh">
+              {todos.map((todo) => (
+                <Card key={todo.id} padding="20px" w="30vw">
                   <HStack>
-                    <Text w="20vw">{todo}</Text>
+                    <Text w="20vw">{todo.task}</Text>
                     <Spacer />
                     <IconButton
                       isRound={true}
@@ -46,6 +96,7 @@ const Todo = () => {
                       aria-label="Edit"
                       fontSize="20px"
                       icon={<EditIcon />}
+                      onClick={() => handleEdit(todo)}
                     />
                     <IconButton
                       isRound={true}
@@ -54,12 +105,13 @@ const Todo = () => {
                       aria-label="Delete"
                       fontSize="20px"
                       icon={<DeleteIcon />}
+                      onClick={() => handleDelete(todo.id)}
                     />
                   </HStack>
                 </Card>
-              )
-            )}
-          </VStack>
+              ))}
+            </VStack>
+          )}
         </VStack>
       </Box>
     </Center>
